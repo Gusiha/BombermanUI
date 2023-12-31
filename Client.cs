@@ -32,7 +32,7 @@ namespace ClientBomberman
         {
             _buffer = new byte[2048];
             _bufferSegment = new(_buffer);
-            IPAddress = IPAddress.Parse("192.168.0.103");
+            IPAddress = IPAddress.Parse("10.102.42.28");
             Port = port;
             _endPoint = new IPEndPoint(iPAddress, Port);
 

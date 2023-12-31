@@ -1,13 +1,16 @@
 ﻿using ClientBomberman;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace YourNamespace
 {
@@ -25,7 +28,7 @@ namespace YourNamespace
 
         public MainWindow()
         {
-            client = new(IPAddress.Parse("192.168.0.102"), 65535);
+            client = new(IPAddress.Parse("10.102.42.28"), 65535);
             client.StartMessageLoop();
             client.SendTo(Encoding.UTF8.GetBytes("connect"));
 
@@ -33,79 +36,119 @@ namespace YourNamespace
             CreateGrid();
             CreatePlayers();
             KeyDown += OnKeyDown;
-            Update();
+            UpdateWithTickrate();
         }
 
-        public void Update()
+        public void UpdateWithTickrate()
         {
             Task.Run(() =>
             {
                 while (true)
                 {
-
-                    MovePlayer(player1, client.Player1Coorditantes[0], client.Player1Coorditantes[1], player1OccupiedCells);
-                    MovePlayer(player2, client.Player1Coorditantes[0], client.Player2Coorditantes[1], player2OccupiedCells);
-
-                    for (int i = 0; i < FieldWidth; i++)
+                    Task task = new(() =>
                     {
-                        for (int j = 0; j < FieldHeight; j++)
+                        Update();
+                    });
+                    Stopwatch timer = Stopwatch.StartNew();
+
+                    //while (Sessions.Count > 0)
+
+                    timer.Restart();
+                    task.Start();
+                    task.Wait();
+                    timer.Stop();
+
+                    Thread.Sleep((int)(500));
+
+                }
+            });
+
+
+        }
+
+
+        public Task Update()
+        {
+            Task.Run(() =>
+            {
+
+                MovePlayer(player1, client.Player1Coorditantes[0], client.Player1Coorditantes[1], player1OccupiedCells);
+                MovePlayer(player2, client.Player1Coorditantes[0], client.Player2Coorditantes[1], player2OccupiedCells);
+
+                client.GameState[client.Player1Coorditantes[0], client.Player1Coorditantes[1]] = 2;
+                client.GameState[client.Player2Coorditantes[0], client.Player2Coorditantes[1]] = 2;
+
+
+                for (int i = 0; i < FieldWidth; i++)
+                {
+                    for (int j = 0; j < FieldHeight; j++)
+                    {
+                        int index1 = i, index2 = j;
+                        if (i == 0)
                         {
-                            switch (client.GameState[i, j])
-                            {
-                                //emptiness
-                                case 0:
-                                    {
-                                        DrawCell(i, j, Brushes.Gray, Brushes.Black);
-                                        break;
-                                    }
-
-                                //wall
-                                case 1:
-                                    {
-
-                                        break;
-                                    }
-                                //player
-                                case 2:
-                                    {
-                                        DrawCell(i, j, Brushes.Pink, Brushes.Black);
-                                        break;
-                                    }
-
-                                //bomb
-                                case 3:
-                                    {
-
-                                        break;
-                                    }
-
-                                //buff
-                                case 4:
-                                    {
-
-                                        break;
-                                    }
-
-                                //destroyable block
-                                case 5:
-                                    {
-
-                                        break;
-                                    }
-
-                                default:
+                            index1++;
+                        }
+                        if (j == 0)
+                        {
+                            index2++;
+                        }
+                        int toDelete = index1 * index2;
+                        switch (client.GameState[i, j])
+                        {
+                            //emptiness
+                            case 0:
+                                {
+                                    DrawCell(i * 50, j * 50, Brushes.Beige, Brushes.Black, toDelete);
                                     break;
-                            }
+                                }
 
+                            //wall
+                            case 1:
+                                {
+
+                                    break;
+                                }
+                            //player
+                            case 2:
+                                {
+                                    DrawCell(i, j, Brushes.Aqua, Brushes.Black, i * j);
+                                    break;
+                                }
+
+                            //bomb
+                            case 3:
+                                {
+
+                                    break;
+                                }
+
+                            //buff
+                            case 4:
+                                {
+
+                                    break;
+                                }
+
+                            //destroyable block
+                            case 5:
+                                {
+
+                                    break;
+                                }
+
+                            default:
+                                break;
                         }
 
                     }
+
                 }
+
 
             });
 
 
-
+            return Task.CompletedTask;
         }
 
         private void CreateGrid()
@@ -114,26 +157,48 @@ namespace YourNamespace
             {
                 for (int x = 0; x < FieldWidth; x++)
                 {
-                    DrawCell(x * CellSize, y * CellSize, Brushes.Gray, Brushes.Black);
+                    int index1 = y, index2 = x;
+                    if (y == 0)
+                    {
+                        index1++;
+                    }
+                    if (x == 0)
+                    {
+                        index2++;
+                    }
+                    DrawCell(x * CellSize, y * CellSize, Brushes.Gray, Brushes.Black, index1 * index2);
                 }
             }
         }
 
-        private void DrawCell(double x, double y, SolidColorBrush fillColor, SolidColorBrush strokeColor)
+        private void DrawCell(double x, double y, SolidColorBrush fillColor, SolidColorBrush strokeColor, int toDelete)
         {
-            var cellRect = new Rectangle
+
+            Dispatcher.Invoke(() =>
             {
-                Fill = fillColor,
-                Stroke = strokeColor,
-                StrokeThickness = 1,
-                Width = CellSize,
-                Height = CellSize
-            };
+                var cellRect = new Rectangle
+                {
+                    Fill = fillColor,
+                    Stroke = strokeColor,
+                    StrokeThickness = 1,
+                    Width = CellSize,
+                    Height = CellSize
+                };
 
-            Canvas.SetLeft(cellRect, x);
-            Canvas.SetTop(cellRect, y);
-
-            GameCanvas.Children.Add(cellRect);
+                Canvas.SetLeft(cellRect, x);
+                Canvas.SetTop(cellRect, y);
+                try
+                {
+                    if (GameCanvas.Children[toDelete] != cellRect)
+                    {
+                        GameCanvas.Children[toDelete] = cellRect;
+                    }
+                }
+                catch
+                {
+                    GameCanvas.Children.Add(cellRect);
+                }
+            });
 
         }
 
@@ -183,12 +248,14 @@ namespace YourNamespace
 
         private void MovePlayer(Rectangle player, double newX, double newY, HashSet<Point> occupiedCells)
         {
+            this.Dispatcher.Invoke(() =>
+            {
+                Canvas.SetLeft(player, newX);
+                Canvas.SetTop(player, newY);
 
-            Canvas.SetLeft(player, newX);
-            Canvas.SetTop(player, newY);
+                OccupyCell(occupiedCells, GetCellCoordinates(newX, newY));
+            });
 
-            
-            OccupyCell(occupiedCells, GetCellCoordinates(newX, newY));
         }
 
         private bool IsCellInsideField(Point cell)
