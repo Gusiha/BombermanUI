@@ -32,7 +32,7 @@ namespace ClientBomberman
         {
             _buffer = new byte[2048];
             _bufferSegment = new(_buffer);
-            IPAddress = IPAddress.Parse("10.102.42.28");
+            IPAddress = IPAddress.Parse("192.168.0.102");
             Port = port;
             _endPoint = new IPEndPoint(iPAddress, Port);
 
@@ -43,7 +43,6 @@ namespace ClientBomberman
             IPEndPoint clientEndPoint = new IPEndPoint(IPAddress, 65534);
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             _socket.Bind(clientEndPoint);
-
         }
 
         public async Task SendCommand(Key key)
@@ -105,21 +104,21 @@ namespace ClientBomberman
                             }
                         case "202":
                             {
-                                //Taking gamestate data from response
-                                for (int i = 1; i < response.Length-4; i++)
-                                {
-                                    // Filling gamestate
-                                    for (int j = 0; j < MapWidth; j++)
-                                    {
-                                        GameState[i-1, j] = Int32.Parse(response[i]);
-                                    }
-                                }
-
                                 Player1Coorditantes[0] = int.Parse(response[response.Length - 4]);
                                 Player1Coorditantes[1] = int.Parse(response[response.Length - 3]);
 
                                 Player2Coorditantes[0] = int.Parse(response[response.Length - 2]);
                                 Player2Coorditantes[1] = int.Parse(response[response.Length - 1]);
+                                //Taking gamestate data from response
+                                for (int i = 1; i < MapWidth*MapHeight-4; i++)
+                                {
+                                    // Filling gamestate
+                                    for (int j = 0; j < MapHeight; j++)
+                                    {
+                                        GameState[i-1, j] = Int32.Parse(response[i]);
+                                    }
+                                }
+
 
                                 break;
                             }

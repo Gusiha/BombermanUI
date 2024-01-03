@@ -4,5 +4,6 @@
         Title="Bomberman" Height="600" Width="650">
     <Canvas x:Name="GameCanvas" Background="White">
         <!-- Код для отрисовки поля и игроков генерируется программно -->
+            
     </Canvas>
 </Window>
