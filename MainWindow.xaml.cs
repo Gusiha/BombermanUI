@@ -39,7 +39,7 @@ namespace YourNamespace
             CreatePlayers();
 
             KeyDown += OnKeyDown;
-            //UpdateWithTickrate();
+            UpdateWithTickrate();
         }
 
         private void OnUpdate(object? sender, EventArgs e)
@@ -49,6 +49,7 @@ namespace YourNamespace
 
         public void UpdateWithTickrate()
         {
+            double tickrate = 1000 / 30;
             Task.Run(() =>
             {
                 while (true)
@@ -66,9 +67,9 @@ namespace YourNamespace
                     task.Wait();
                     timer.Stop();
 
-                    if (timer.ElapsedMilliseconds <= 1000)
+                    if (timer.ElapsedMilliseconds <= tickrate)
                     {
-                        Thread.Sleep((int)(1000 - timer.ElapsedMilliseconds));
+                        Thread.Sleep((int)(tickrate - timer.ElapsedMilliseconds));
                     }
 
                 }
