@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -23,7 +24,7 @@ namespace ClientBomberman
         public int MapWidth { get; set; } = 13;
         public int MapHeight { get; set; } = 11;
 
-        public int[] Player1Coorditantes{ get; set; }
+        public int[] Player1Coorditantes { get; set; }
         public int[] Player2Coorditantes { get; set; }
         public int[,] GameState { get; set; }
 
@@ -91,41 +92,55 @@ namespace ClientBomberman
 
                     result = await _socket.ReceiveFromAsync(_bufferSegment, SocketFlags.None, _endPoint);
                     var message = Encoding.UTF8.GetString(_buffer, 0, result.ReceivedBytes);
+                    
                     //Console.WriteLine($"Recieved : {message} from {result.RemoteEndPoint}");
                     string[] response = message.Split(' ');
-                    
-                    
+
+
                     switch (response[0])
                     {
-                        case "203": {
+                        case "203":
+                            {
 
-                                PlayerId = Guid.Parse(response[1]); 
-                                break;
+                                PlayerId = Guid.Parse(response[1]);
+                                continue;
                             }
                         case "202":
                             {
                                 Player1Coorditantes[0] = int.Parse(response[response.Length - 4]);
                                 Player1Coorditantes[1] = int.Parse(response[response.Length - 3]);
+                                Debug.Indent();
+                                Debug.WriteLine($"Player1 : [{Player1Coorditantes[0]}] [{Player1Coorditantes[1]}]");
+                                Debug.Unindent();
 
                                 Player2Coorditantes[0] = int.Parse(response[response.Length - 2]);
                                 Player2Coorditantes[1] = int.Parse(response[response.Length - 1]);
+                                Debug.Indent();
+                                Debug.WriteLine($"Player2 : [{Player2Coorditantes[0]}] [{Player2Coorditantes[1]}]");
+                                Debug.Unindent();
                                 //Taking gamestate data from response
-                                for (int i = 1; i < MapWidth*MapHeight-4; i++)
+
+                                int responseSymbolNumber = 0;
+
+                                for (int i = 0; i < MapWidth; i++)
                                 {
                                     // Filling gamestate
                                     for (int j = 0; j < MapHeight; j++)
                                     {
-                                        GameState[i-1, j] = Int32.Parse(response[i]);
+                                        responseSymbolNumber++;
+                                        GameState[i, j] = Int32.Parse(response[responseSymbolNumber]);
                                     }
                                 }
 
 
-                                break;
+                                continue;
+
                             }
 
 
                         default:
-                            break;
+                            continue;
+
                     }
                 }
 

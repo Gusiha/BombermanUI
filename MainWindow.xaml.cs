@@ -39,7 +39,7 @@ namespace YourNamespace
             CreatePlayers();
 
             KeyDown += OnKeyDown;
-            UpdateWithTickrate();
+            //UpdateWithTickrate();
         }
 
         private void OnUpdate(object? sender, EventArgs e)
@@ -77,81 +77,6 @@ namespace YourNamespace
 
         }
 
-        public void NewUpdate(object? sender, EventArgs e)
-        {
-            MovePlayer(player1, client.Player1Coorditantes[0], client.Player1Coorditantes[1], player1OccupiedCells);
-            MovePlayer(player2, client.Player1Coorditantes[0], client.Player2Coorditantes[1], player2OccupiedCells);
-
-            client.GameState[client.Player1Coorditantes[0], client.Player1Coorditantes[1]] = 2;
-            client.GameState[client.Player2Coorditantes[0], client.Player2Coorditantes[1]] = 2;
-
-
-            for (int i = 0; i < FieldWidth; i++)
-            {
-                for (int j = 0; j < FieldHeight; j++)
-                {
-                    int index1 = i, index2 = j;
-                    if (i == 0)
-                    {
-                        index1++;
-                    }
-                    if (j == 0)
-                    {
-                        index2++;
-                    }
-                    int toDelete = index1 * index2;
-                    switch (client.GameState[i, j])
-                    {
-                        //emptiness
-                        case 0:
-                            {
-                                DrawCell(i * 50, j * 50, Brushes.Beige, Brushes.Black, toDelete);
-                                break;
-                            }
-
-                        //wall
-                        case 1:
-                            {
-
-                                break;
-                            }
-                        //player
-                        case 2:
-                            {
-                                DrawCell(i, j, Brushes.Aqua, Brushes.Black, i * j);
-                                break;
-                            }
-
-                        //bomb
-                        case 3:
-                            {
-
-                                break;
-                            }
-
-                        //buff
-                        case 4:
-                            {
-
-                                break;
-                            }
-
-                        //destroyable block
-                        case 5:
-                            {
-
-                                break;
-                            }
-
-                        default:
-                            break;
-                    }
-
-                }
-
-            }
-
-        }
 
         public Task Update()
         {
