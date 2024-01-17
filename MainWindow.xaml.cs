@@ -26,6 +26,7 @@ namespace YourNamespace
         private readonly HashSet<Point> player2OccupiedCells = new HashSet<Point>();
         private Rectangle player1;
         private Rectangle player2;
+        private Canvas ClonedCanvas;
 
         public MainWindow()
         {
@@ -38,13 +39,72 @@ namespace YourNamespace
             CreateGrid();
             CreatePlayers();
 
+            ClonedCanvas = CloneCanvasChildren(GameCanvas);
+
+
             KeyDown += OnKeyDown;
             UpdateWithTickrate();
         }
 
+        /// <summary>
+        /// Deep copy of canvas children
+        /// </summary>
+        /// <param name="toClone">A canvas to deep copy children from.</param>
+        /// <returns>A new canvas with deep cloned children.</returns>
+        private Canvas CloneCanvasChildren(Canvas toClone)
+        {
+            Canvas newCanvas = new Canvas();
+
+            if (toClone == null || toClone.Children.Count == 0)
+            {
+                return newCanvas;
+            }
+
+            for (int i = 0; i < toClone.Children.Count; i++)
+            {
+                Rectangle rect = (Rectangle)toClone.Children[i];
+                Rectangle clonedRect = new()
+                {
+                    Fill = rect.Fill.Clone(),
+                    Stroke = rect.Stroke.Clone(),
+                    StrokeThickness = rect.StrokeThickness,
+                    Width = rect.Width,
+                    Height = rect.Height
+                };
+                newCanvas.Children.Add(clonedRect);
+            }
+
+            return newCanvas;
+        }
+
+        /// <summary>
+        /// Children color comparer method.
+        /// </summary>
+        /// <param name="one">First canvas</param>
+        /// <param name="two">Second canvas</param>
+        /// <returns>True if elements are of the same color, false if otherwise.</returns>
+        private bool ComapreCanvasChildren(Canvas one, Canvas two)
+        {
+            if (one == null || two == null) return false;
+            if (one.Children.Count != two.Children.Count) return false;
+
+            for (int i = 0; i < one.Children.Count; i++)
+            {
+                Rectangle oneRect = (Rectangle)one.Children[i];
+                Rectangle twoRect = (Rectangle)two.Children[i];
+
+                if (oneRect.Fill.ToString() != twoRect.Fill.ToString())
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         private void OnUpdate(object? sender, EventArgs e)
         {
-            
+
         }
 
         public void UpdateWithTickrate()
@@ -90,7 +150,7 @@ namespace YourNamespace
                 client.GameState[client.Player1Coorditantes[0], client.Player1Coorditantes[1]] = 2;
                 client.GameState[client.Player2Coorditantes[0], client.Player2Coorditantes[1]] = 2;
 
-
+                Canvas assembledCanvas = new();
                 for (int i = 0; i < FieldWidth; i++)
                 {
                     for (int j = 0; j < FieldHeight; j++)
@@ -110,7 +170,7 @@ namespace YourNamespace
                             //emptiness
                             case 0:
                                 {
-                                    DrawCell(i * 50, j * 50, Brushes.Beige, Brushes.Black, toDelete);
+                                    DrawCell(assembledCanvas, i * 50, j * 50, Brushes.Beige, Brushes.Black);
                                     break;
                                 }
 
@@ -123,7 +183,7 @@ namespace YourNamespace
                             //player
                             case 2:
                                 {
-                                    DrawCell(i * 50, j * 50, Brushes.Aqua, Brushes.Black, i * j);
+                                    DrawCell(assembledCanvas, i * 50, j * 50, Brushes.Aqua, Brushes.Black);
                                     break;
                                 }
 
@@ -156,7 +216,15 @@ namespace YourNamespace
 
                 }
 
-
+                if (!ComapreCanvasChildren(ClonedCanvas, assembledCanvas))
+                {
+                    ClonedCanvas = CloneCanvasChildren(assembledCanvas);
+                    Canvas tempVar = CloneCanvasChildren(ClonedCanvas);
+                    Dispatcher.Invoke(() =>
+                    {
+                        GameCanvas = tempVar;
+                    });
+                }
             });
 
 
@@ -178,40 +246,25 @@ namespace YourNamespace
                     {
                         index2++;
                     }
-                    DrawCell(x * CellSize, y * CellSize, Brushes.Gray, Brushes.Black, index1 * index2);
+                    DrawCell(GameCanvas, x * CellSize, y * CellSize, Brushes.Gray, Brushes.Black);
                 }
             }
         }
 
-        private void DrawCell(double x, double y, SolidColorBrush fillColor, SolidColorBrush strokeColor, int toDelete)
+        private void DrawCell(Canvas canvas, double x, double y, SolidColorBrush fillColor, SolidColorBrush strokeColor)
         {
-
-            Dispatcher.Invoke(() =>
+            var cellRect = new Rectangle
             {
-                var cellRect = new Rectangle
-                {
-                    Fill = fillColor,
-                    Stroke = strokeColor,
-                    StrokeThickness = 1,
-                    Width = CellSize,
-                    Height = CellSize
-                };
+                Fill = fillColor,
+                Stroke = strokeColor,
+                StrokeThickness = 1,
+                Width = CellSize,
+                Height = CellSize
+            };
 
-                Canvas.SetLeft(cellRect, x);
-                Canvas.SetTop(cellRect, y);
-                try
-                {
-                    if (GameCanvas.Children[toDelete] != cellRect)
-                    {
-                        GameCanvas.Children[toDelete] = cellRect;
-                    }
-                }
-                catch
-                {
-                    GameCanvas.Children.Add(cellRect);
-                }
-            });
-
+            Canvas.SetLeft(cellRect, x);
+            Canvas.SetTop(cellRect, y);
+            canvas.Children.Add(cellRect);
         }
 
         private void CreatePlayers()
