@@ -31,7 +31,6 @@ namespace WpfApp1
 
         public Game(string address)
         {
-            InitializeComponent();
             ServerAddress = address;
 
             //"192.168.0.102"
@@ -41,6 +40,7 @@ namespace WpfApp1
             client.SendTo(Encoding.UTF8.GetBytes("connect"));
 
 
+            InitializeComponent();
             CreateGrid();
             CreatePlayers();
 
@@ -67,10 +67,6 @@ namespace WpfApp1
 
             for (int i = 0; i < FieldWidth * FieldHeight; i++)
             {
-                Debug.Indent();
-                Debug.WriteLine(toClone.Children[i].ToString());
-                Debug.Unindent();
-
 
 
                 Rectangle rect = (Rectangle)toClone.Children[i];
@@ -192,7 +188,6 @@ namespace WpfApp1
                             //wall
                             case 1:
                                 {
-
                                     break;
                                 }
                             //player
