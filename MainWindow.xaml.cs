@@ -60,8 +60,14 @@ namespace YourNamespace
                 return newCanvas;
             }
 
-            for (int i = 0; i < toClone.Children.Count; i++)
+            for (int i = 0; i < FieldWidth*FieldHeight; i++)
             {
+                Debug.Indent();
+                Debug.WriteLine(toClone.Children[i].ToString());
+                Debug.Unindent();
+
+
+
                 Rectangle rect = (Rectangle)toClone.Children[i];
                 Rectangle clonedRect = new()
                 {
@@ -156,10 +162,12 @@ namespace YourNamespace
                     for (int j = 0; j < FieldHeight; j++)
                     {
                         int index1 = i, index2 = j;
+                        
                         if (i == 0)
                         {
                             index1++;
                         }
+                        
                         if (j == 0)
                         {
                             index2++;
