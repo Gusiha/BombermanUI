@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,7 +18,7 @@ namespace ClientBomberman
         private byte[] _buffer;
         private ArraySegment<byte> _bufferSegment { get; set; }
 
-        public IPAddress IPAddress { get; private set; }
+        public IPAddress ClientIPAddress { get; private set; }
         public int Port { get; private set; }
 
 
@@ -29,19 +31,43 @@ namespace ClientBomberman
         public int[,] GameState { get; set; }
 
 
-        public Client(IPAddress iPAddress, int port)
+        public Client(IPAddress serverIPAddress, int port)
         {
+            
+            string clientIp = "";
             _buffer = new byte[2048];
             _bufferSegment = new(_buffer);
-            IPAddress = IPAddress.Parse("192.168.0.102");
+
+            foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                var addr = ni.GetIPProperties().GatewayAddresses.FirstOrDefault();
+                if (addr != null && !addr.Address.ToString().Equals("0.0.0.0"))
+                {
+                    if (ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || ni.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+                    {
+                        foreach (UnicastIPAddressInformation ip in ni.GetIPProperties().UnicastAddresses)
+                        {
+                            if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
+                            {
+                                clientIp = ip.Address.ToString();
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (clientIp == "")
+                throw new Exception("No network adapters with an IPv4 address in the system!");
+
+            ClientIPAddress = IPAddress.Parse(clientIp);
             Port = port;
-            _endPoint = new IPEndPoint(iPAddress, Port);
+            _endPoint = new IPEndPoint(serverIPAddress, Port);
 
             GameState = new int[MapWidth, MapHeight];
             Player1Coorditantes = new int[2];
             Player2Coorditantes = new int[2];
 
-            IPEndPoint clientEndPoint = new IPEndPoint(IPAddress, 65534);
+            IPEndPoint clientEndPoint = new IPEndPoint(ClientIPAddress, 65534);
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             _socket.Bind(clientEndPoint);
         }
@@ -92,7 +118,7 @@ namespace ClientBomberman
 
                     result = await _socket.ReceiveFromAsync(_bufferSegment, SocketFlags.None, _endPoint);
                     var message = Encoding.UTF8.GetString(_buffer, 0, result.ReceivedBytes);
-                    
+
                     //Console.WriteLine($"Recieved : {message} from {result.RemoteEndPoint}");
                     string[] response = message.Split(' ');
 

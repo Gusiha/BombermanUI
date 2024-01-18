@@ -60,7 +60,7 @@ namespace YourNamespace
                 return newCanvas;
             }
 
-            for (int i = 0; i < FieldWidth*FieldHeight; i++)
+            for (int i = 0; i < FieldWidth * FieldHeight; i++)
             {
                 Debug.Indent();
                 Debug.WriteLine(toClone.Children[i].ToString());
@@ -116,6 +116,7 @@ namespace YourNamespace
         public void UpdateWithTickrate()
         {
             double tickrate = 1000 / 30;
+
             Task.Run(() =>
             {
                 while (true)
@@ -145,29 +146,30 @@ namespace YourNamespace
         }
 
 
+
         public Task Update()
         {
-            Task.Run(() =>
+
+            MovePlayer(player1, client.Player1Coorditantes[0]*50, client.Player1Coorditantes[1]*50, player1OccupiedCells);
+            MovePlayer(player2, client.Player1Coorditantes[0]*50, client.Player2Coorditantes[1]*50, player2OccupiedCells);
+
+            client.GameState[client.Player1Coorditantes[0], client.Player1Coorditantes[1]] = 2;
+            client.GameState[client.Player2Coorditantes[0], client.Player2Coorditantes[1]] = 2;
+
+            Dispatcher.BeginInvoke(() =>
             {
-
-                MovePlayer(player1, client.Player1Coorditantes[0], client.Player1Coorditantes[1], player1OccupiedCells);
-                MovePlayer(player2, client.Player1Coorditantes[0], client.Player2Coorditantes[1], player2OccupiedCells);
-
-                client.GameState[client.Player1Coorditantes[0], client.Player1Coorditantes[1]] = 2;
-                client.GameState[client.Player2Coorditantes[0], client.Player2Coorditantes[1]] = 2;
-
                 Canvas assembledCanvas = new();
                 for (int i = 0; i < FieldWidth; i++)
                 {
                     for (int j = 0; j < FieldHeight; j++)
                     {
                         int index1 = i, index2 = j;
-                        
+
                         if (i == 0)
                         {
                             index1++;
                         }
-                        
+
                         if (j == 0)
                         {
                             index2++;
