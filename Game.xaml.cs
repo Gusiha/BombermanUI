@@ -31,6 +31,7 @@ namespace WpfApp1
 
         public Game(string address)
         {
+            Loaded += Loaded_Page;
             ServerAddress = address;
 
             //"192.168.0.102"
@@ -47,8 +48,14 @@ namespace WpfApp1
             ClonedCanvas = CloneCanvasChildren(GameCanvas);
 
 
-            KeyDown += OnKeyDown;
+            //KeyDown += OnKeyDown;
             UpdateWithTickrate();
+        }
+
+        private void Loaded_Page(object sender, RoutedEventArgs e)
+        {
+            var window = Window.GetWindow(this);
+            window.KeyDown += OnKeyDown;
         }
 
         /// <summary>
