@@ -151,7 +151,7 @@ namespace YourNamespace
         {
 
             MovePlayer(player1, client.Player1Coorditantes[0]*50, client.Player1Coorditantes[1]*50, player1OccupiedCells);
-            MovePlayer(player2, client.Player1Coorditantes[0]*50, client.Player2Coorditantes[1]*50, player2OccupiedCells);
+            MovePlayer(player2, client.Player2Coorditantes[0]*50, client.Player2Coorditantes[1]*50, player2OccupiedCells);
 
             client.GameState[client.Player1Coorditantes[0], client.Player1Coorditantes[1]] = 2;
             client.GameState[client.Player2Coorditantes[0], client.Player2Coorditantes[1]] = 2;
