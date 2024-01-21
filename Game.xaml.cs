@@ -88,7 +88,7 @@ namespace WpfApp1
                         Width = rect.Width,
                         Height = rect.Height
                     };
-                    DrawCell(newCanvas, (i + 1) * 50, (j + 1) * 50, clonedRect);
+                    DrawCell(newCanvas, i * 50, j * 50, clonedRect);
                 }
             }
 
@@ -117,7 +117,7 @@ namespace WpfApp1
                         Height = toClone[i, j].Height
                     };
 
-                    DrawCell(newCanvas, (i + 1) * 50, (j + 1) * 50, clonedRect);
+                    DrawCell(newCanvas, i * 50, j * 50, clonedRect);
                 }
             }
         }
@@ -219,10 +219,10 @@ namespace WpfApp1
             /*client.GameState[client.Player1Coorditantes[0], client.Player1Coorditantes[1]] = 2;
             client.GameState[client.Player2Coorditantes[0], client.Player2Coorditantes[1]] = 2;*/
 
-            Rectangle[,] assembledCanvas = new Rectangle[FieldWidth - 1, FieldHeight - 1];
-            for (int i = 0; i < FieldWidth - 1; i++)
+            Rectangle[,] assembledCanvas = new Rectangle[FieldWidth, FieldHeight];
+            for (int i = 0; i < FieldWidth; i++)
             {
-                for (int j = 0; j < FieldHeight - 1; j++)
+                for (int j = 0; j < FieldHeight; j++)
                 {
                     switch (client.GameState[i, j])
                     {
