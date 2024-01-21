@@ -301,7 +301,20 @@ namespace WpfApp1
                         //destroyable block
                         case 5:
                             {
+                                //rectIndex[i, j] = j;
+                                Dispatcher.Invoke(() =>
+                                {
+                                    assembledCanvas[i, j] =
+                                        new()
+                                        {
+                                            Fill = Brushes.SandyBrown,
+                                            Stroke = Brushes.Gray,
+                                            StrokeThickness = 0.05,
+                                            Width = CellSize,
+                                            Height = CellSize
+                                        };
 
+                                });
                                 break;
                             }
 
