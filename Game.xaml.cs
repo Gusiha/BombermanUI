@@ -37,6 +37,7 @@ namespace WpfApp1
             //"192.168.0.102"
             client = new(IPAddress.Parse(ServerAddress), 65535);
 
+            //TODO: Add try catch in a correct way, so that wrong IP address is handleled correctly.
             client.StartMessageLoop();
             client.SendTo(Encoding.UTF8.GetBytes("connect"));
 
@@ -56,7 +57,6 @@ namespace WpfApp1
         {
             var window = Window.GetWindow(this);
             window.KeyDown += OnKeyDown;
-
         }
 
         /// <summary>
@@ -88,41 +88,36 @@ namespace WpfApp1
                         Width = rect.Width,
                         Height = rect.Height
                     };
-                    Canvas.SetLeft(clonedRect, i * 50);
-                    Canvas.SetTop(clonedRect, j * 50);
-                    newCanvas.Children.Add(clonedRect);
+                    DrawCell(newCanvas, (i + 1) * 50, (j + 1) * 50, clonedRect);
                 }
             }
 
             return newCanvas;
         }
 
-        private void CloneCanvasChildren(Canvas newCanvas, List<Rectangle> toClone, int[,] indexes)
+        private void CloneCanvasChildren(Canvas newCanvas, Rectangle[,] toClone)
         {
-            if (toClone == null || toClone.Count == 0)
+            if (toClone == null || toClone.GetLength(0) == 0)
             {
                 return;
             }
 
             newCanvas.Children.Clear();
 
-            for (int i = 0; i < indexes.GetLength(0); i++)
+            for (int i = 0; i < toClone.GetLength(0); i++)
             {
-                for (int j = 0; j < indexes.GetLength(1); j++)
+                for (int j = 0; j < toClone.GetLength(1); j++)
                 {
-                    int n = j;
-                    if (n == 0) n++;
                     Rectangle clonedRect = new()
                     {
-                        Fill = toClone[i * n].Fill.Clone(),
-                        Stroke = toClone[i * n].Stroke.Clone(),
-                        StrokeThickness = toClone[i * n].StrokeThickness,
-                        Width = toClone[i * n].Width,
-                        Height = toClone[i * n].Height
+                        Fill = toClone[i, j].Fill.Clone(),
+                        Stroke = toClone[i, j].Stroke.Clone(),
+                        StrokeThickness = toClone[i, j].StrokeThickness,
+                        Width = toClone[i, j].Width,
+                        Height = toClone[i, j].Height
                     };
-                    Canvas.SetLeft(clonedRect, i * 50);
-                    Canvas.SetTop(clonedRect, j * 50);
-                    newCanvas.Children.Add(clonedRect);
+
+                    DrawCell(newCanvas, (i + 1) * 50, (j + 1) * 50, clonedRect);
                 }
             }
         }
@@ -152,18 +147,26 @@ namespace WpfApp1
             return true;
         }
 
-        private static bool CompareCanvasChildren(Canvas one, List<Rectangle> two)
+        private static bool CompareCanvasChildren(Canvas one, Rectangle[,] two)
         {
             if (one == null || two == null) return false;
-            if (one.Children.Count != two.Count) return false;
+            if (one.Children.Count != two.GetLength(0) * two.GetLength(1)) return false;
 
-            for (int i = 0; i < one.Children.Count; i++)
+            for (int i = 0; i < two.GetLength(0); i++)
             {
-                Rectangle oneRect = (Rectangle)one.Children[i];
-
-                if (oneRect.Fill.ToString() != two[i].Fill.ToString())
+                for (int j = 0; j < two.GetLength(1); j++)
                 {
-                    return false;
+                    int n = i;
+                    int g = j;
+                    Rectangle oneRect = (Rectangle)one.Children[n * g];
+
+                    if (n == 0 && g != 0) n++;
+                    if (g == 0 && n != 0) g++;
+
+                    if (two[i, j].Fill.ToString() != oneRect.Fill.ToString())
+                    {
+                        return false;
+                    }
                 }
             }
 
@@ -208,7 +211,6 @@ namespace WpfApp1
         }
 
 
-        //TODO: Determine the reason walls are not being placed, even though the GameState array is updated from the server (something possibly goes wrong, though)
         public Task Update()
         {
             MovePlayer(player1, client.Player1Coorditantes[0] * 50, client.Player1Coorditantes[1] * 50, player1OccupiedCells);
@@ -217,41 +219,28 @@ namespace WpfApp1
             /*client.GameState[client.Player1Coorditantes[0], client.Player1Coorditantes[1]] = 2;
             client.GameState[client.Player2Coorditantes[0], client.Player2Coorditantes[1]] = 2;*/
 
-            List<Rectangle> assembledCanvas = new();
-            int[,] rectIndex = new int[FieldWidth, FieldHeight];
-            for (int i = 0; i < FieldWidth; i++)
+            Rectangle[,] assembledCanvas = new Rectangle[FieldWidth - 1, FieldHeight - 1];
+            for (int i = 0; i < FieldWidth - 1; i++)
             {
-                for (int j = 0; j < FieldHeight; j++)
+                for (int j = 0; j < FieldHeight - 1; j++)
                 {
-                    int index1 = i, index2 = j;
-
-                    if (i == 0)
-                    {
-                        index1++;
-                    }
-
-                    if (j == 0)
-                    {
-                        index2++;
-                    }
-                    int toDelete = index1 * index2;
                     switch (client.GameState[i, j])
                     {
                         //emptiness
                         case 0:
                             {
-                                rectIndex[i, j] = j;
+                                //rectIndex[i, j] = j;
                                 Dispatcher.Invoke(() =>
                                 {
-                                    assembledCanvas.Add(
+                                    assembledCanvas[i, j] =
                                         new()
                                         {
                                             Fill = Brushes.Beige,
-                                            Stroke = Brushes.Black,
-                                            StrokeThickness = 0.5,
+                                            Stroke = Brushes.Gray,
+                                            StrokeThickness = 0.05,
                                             Width = CellSize,
                                             Height = CellSize
-                                        });
+                                        };
                                 });
 
                                 //DrawCell(assembledCanvas, i * 50, j * 50, Brushes.Beige, Brushes.Black);
@@ -261,18 +250,18 @@ namespace WpfApp1
                         //wall
                         case 1:
                             {
-                                rectIndex[i, j] = j;
+                                //rectIndex[i, j] = j;
                                 Dispatcher.Invoke(() =>
                                 {
-                                    assembledCanvas.Add(
+                                    assembledCanvas[i, j] =
                                     new()
                                     {
-                                        Fill = Brushes.Chocolate,
+                                        Fill = Brushes.Gray,
                                         Stroke = Brushes.Black,
                                         StrokeThickness = 0.5,
                                         Width = CellSize,
                                         Height = CellSize
-                                    });
+                                    };
                                 });
                                 break;
                             }
@@ -328,11 +317,13 @@ namespace WpfApp1
             {
                 if (!CompareCanvasChildren(ClonedCanvas, assembledCanvas))
                 {
-                    CloneCanvasChildren(ClonedCanvas, assembledCanvas, rectIndex);
+                    CloneCanvasChildren(ClonedCanvas, assembledCanvas);
 
-                    CloneCanvasChildren(GameCanvas, assembledCanvas, rectIndex);
+                    CloneCanvasChildren(GameCanvas, assembledCanvas);
                 }
                 DrawPlayer(client.Player1Coorditantes[0] * 50, client.Player1Coorditantes[1] * 50, Brushes.Blue, player1OccupiedCells);
+                DrawPlayer(client.Player2Coorditantes[0] * 50, client.Player2Coorditantes[1] * 50, Brushes.Red, player2OccupiedCells);
+
             });
 
 
