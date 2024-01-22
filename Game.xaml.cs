@@ -28,14 +28,16 @@ namespace WpfApp1
         private Rectangle player2;
         private Canvas ClonedCanvas;
         private string ServerAddress;
+        private int Port;
 
-        public Game(string address)
+        public Game(string address, string port)
         {
             Loaded += Loaded_Page;
             ServerAddress = address;
+            Port = int.Parse(port);
 
             //"192.168.0.102"
-            client = new(IPAddress.Parse(ServerAddress), 65535);
+            client = new(IPAddress.Parse(ServerAddress), Port);
 
             //TODO: Add try catch in a correct way, so that wrong IP address is handleled correctly.
             client.StartMessageLoop();
