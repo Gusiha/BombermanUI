@@ -19,15 +19,15 @@ namespace WpfApp1
         {
             try
             {
-                string asf = ServerIP.Text;
                 IPAddress.Parse(ServerIP.Text);
+                Int32.Parse(Port.Text);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
                 return;
             }
-            Game game = new (ServerIP.Text);
+            Game game = new (ServerIP.Text, Port.Text);
             this.NavigationService.Navigate(game);
         }
     }

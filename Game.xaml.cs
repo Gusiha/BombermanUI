@@ -1,5 +1,6 @@
 ﻿using ClientBomberman;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
@@ -21,22 +22,22 @@ namespace WpfApp1
         private const int FieldWidth = 13;
         private const int FieldHeight = 11;
         private const int CellSize = 50;
-        private int p1OldCoordX = -1;
-        private int p1OldCoordY = -1;
-        private int p2OldCoordX = -1;
-        private int p2OldCoordY = -1;
-        private int p1OldCanvasPlace = -1;
-        private int p2OldCanvasPlace = -1;
-        private int[,] OldGameState { get; set; }
+        private readonly HashSet<Point> player1OccupiedCells = new HashSet<Point>();
+        private readonly HashSet<Point> player2OccupiedCells = new HashSet<Point>();
+        private Rectangle player1;
+        private Rectangle player2;
         private Canvas ClonedCanvas;
         private string ServerAddress;
+        private int Port;
 
-        public Game(string address)
+        public Game(string address, string port)
         {
             Loaded += Loaded_Page;
             ServerAddress = address;
+            Port = int.Parse(port);
 
-            client = new(IPAddress.Parse(ServerAddress), 65535);
+            //"192.168.0.102"
+            client = new(IPAddress.Parse(ServerAddress), Port);
 
             //TODO: Add try catch in a correct way, so that wrong IP address is handleled correctly.
             client.StartMessageLoop();
@@ -45,11 +46,13 @@ namespace WpfApp1
 
             InitializeComponent();
             CreateGrid();
+            CreatePlayers();
 
             ClonedCanvas = CloneCanvasChildren(GameCanvas, FieldWidth, FieldHeight);
 
+
+            //KeyDown += OnKeyDown;
             UpdateWithTickrate();
-            OldGameState = new int[FieldWidth, FieldHeight];
         }
 
         private void Loaded_Page(object sender, RoutedEventArgs e)
@@ -63,9 +66,9 @@ namespace WpfApp1
         /// </summary>
         /// <param name="toClone">A canvas to deep copy children from.</param>
         /// <returns>A new canvas with deep cloned children.</returns>
-        private static Canvas CloneCanvasChildren(Canvas toClone, int xS, int yS)
+        private Canvas CloneCanvasChildren(Canvas toClone, int xS, int yS)
         {
-            Canvas newCanvas = new();
+            Canvas newCanvas = new Canvas();
 
             if (toClone == null || toClone.Children.Count == 0)
             {
@@ -94,7 +97,7 @@ namespace WpfApp1
             return newCanvas;
         }
 
-        private static void CloneCanvasChildren(Canvas newCanvas, Rectangle[,] toClone)
+        private void CloneCanvasChildren(Canvas newCanvas, Rectangle[,] toClone)
         {
             if (toClone == null || toClone.GetLength(0) == 0)
             {
@@ -191,6 +194,8 @@ namespace WpfApp1
                     });
                     Stopwatch timer = Stopwatch.StartNew();
 
+                    //while (Sessions.Count > 0)
+
                     timer.Restart();
                     task.Start();
                     task.Wait();
@@ -203,173 +208,139 @@ namespace WpfApp1
 
                 }
             });
+
+
         }
 
-        private void ProcessPlayer(ref int oldPlayerCoordsX, ref int oldPlayerCoordsY, bool canvasCleared, ref int oldCanvasPlace, int playerNum)
-        {
-            int[] array = new int[2];
-            SolidColorBrush color = Brushes.Blue;
-
-            switch (playerNum)
-            {
-                case 1:
-                    array = client.Player1Coorditantes;
-                    color = Brushes.Blue;
-                    break;
-
-                case 2:
-                    array = client.Player2Coorditantes;
-                    color = Brushes.Red;
-                    break;
-
-                default:
-                    break;
-            }
-
-
-            if (array[0] != oldPlayerCoordsX || array[1] != oldPlayerCoordsY)
-            {
-                int temp = oldCanvasPlace;
-                oldPlayerCoordsX = array[0]; oldPlayerCoordsY = array[1];
-
-                Dispatcher.Invoke(() =>
-                {
-                    if (temp >= 0 && !canvasCleared && GameCanvas.Children.Count > temp)
-                    {
-                        GameCanvas.Children.RemoveAt(temp);
-                    }
-
-                    DrawPlayer(array[0] * 50, array[1] * 50, color);
-                    temp = GameCanvas.Children.Count - 1;
-                });
-                oldCanvasPlace = temp;
-            }
-        }
 
         public Task Update()
         {
-            bool canvasCleared = false;
+            MovePlayer(player1, client.Player1Coorditantes[0] * 50, client.Player1Coorditantes[1] * 50, player1OccupiedCells);
+            MovePlayer(player2, client.Player2Coorditantes[0] * 50, client.Player2Coorditantes[1] * 50, player2OccupiedCells);
 
-            bool stateChanged = false;
-            for (int i = 0; i < client.GameState.GetLength(0); i++)
+            /*client.GameState[client.Player1Coorditantes[0], client.Player1Coorditantes[1]] = 2;
+            client.GameState[client.Player2Coorditantes[0], client.Player2Coorditantes[1]] = 2;*/
+
+            Rectangle[,] assembledCanvas = new Rectangle[FieldWidth, FieldHeight];
+            for (int i = 0; i < FieldWidth; i++)
             {
-                for (int j = 0; j < client.GameState.GetLength(1); j++)
+                for (int j = 0; j < FieldHeight; j++)
                 {
-                    if (OldGameState[i, j] != client.GameState[i, j])
+                    switch (client.GameState[i, j])
                     {
-                        stateChanged = true;
-                    }
-                }
-            }
-
-            //TODO: refactor canvas re-write logic.
-            if (stateChanged)
-            {
-                canvasCleared = true;
-                Rectangle[,] assembledCanvas = new Rectangle[FieldWidth, FieldHeight];
-                for (int i = 0; i < FieldWidth; i++)
-                {
-                    for (int j = 0; j < FieldHeight; j++)
-                    {
-                        OldGameState[i, j] = client.GameState[i, j];
-                        switch (client.GameState[i, j])
-                        {
-                            //emptiness
-                            case 0:
+                        //emptiness
+                        case 0:
+                            {
+                                //rectIndex[i, j] = j;
+                                Dispatcher.Invoke(() =>
                                 {
-                                    Dispatcher.Invoke(() =>
-                                    {
-                                        assembledCanvas[i, j] =
-                                            new()
-                                            {
-                                                Fill = Brushes.Beige,
-                                                Stroke = Brushes.Gray,
-                                                StrokeThickness = 0.05,
-                                                Width = CellSize,
-                                                Height = CellSize
-                                            };
-                                    });
-
-                                    //DrawCell(assembledCanvas, i * 50, j * 50, Brushes.Beige, Brushes.Black);
-                                    break;
-                                }
-
-                            //wall
-                            case 1:
-                                {
-                                    Dispatcher.Invoke(() =>
-                                    {
-                                        assembledCanvas[i, j] =
+                                    assembledCanvas[i, j] =
                                         new()
                                         {
-                                            Fill = Brushes.Gray,
-                                            Stroke = Brushes.Black,
-                                            StrokeThickness = 0.5,
+                                            Fill = Brushes.Beige,
+                                            Stroke = Brushes.Gray,
+                                            StrokeThickness = 0.05,
                                             Width = CellSize,
                                             Height = CellSize
                                         };
-                                    });
-                                    break;
-                                }
+                                });
 
-                            //player
-                            case 2:
-                                {
-                                    //is likely not needed at all.
-                                    break;
-                                }
-
-                            //bomb
-                            case 3:
-                                {
-                                    //halfway through implementation
-                                    break;
-                                }
-
-                            //buff
-                            case 4:
-                                {
-                                    //not implemented
-                                    break;
-                                }
-
-                            //destroyable block
-                            case 5:
-                                {
-                                    Dispatcher.Invoke(() =>
-                                    {
-                                        assembledCanvas[i, j] =
-                                            new()
-                                            {
-                                                Fill = Brushes.SandyBrown,
-                                                Stroke = Brushes.Gray,
-                                                StrokeThickness = 0.05,
-                                                Width = CellSize,
-                                                Height = CellSize
-                                            };
-
-                                    });
-                                    break;
-                                }
-                            default:
+                                //DrawCell(assembledCanvas, i * 50, j * 50, Brushes.Beige, Brushes.Black);
                                 break;
-                        }
+                            }
 
+                        //wall
+                        case 1:
+                            {
+                                //rectIndex[i, j] = j;
+                                Dispatcher.Invoke(() =>
+                                {
+                                    assembledCanvas[i, j] =
+                                    new()
+                                    {
+                                        Fill = Brushes.Gray,
+                                        Stroke = Brushes.Black,
+                                        StrokeThickness = 0.5,
+                                        Width = CellSize,
+                                        Height = CellSize
+                                    };
+                                });
+                                break;
+                            }
+                        //player
+                        case 2:
+                            {
+                                /*rectIndex[i, j] = j;
+                                Dispatcher.Invoke(() =>
+                                {
+                                    assembledCanvas.Add(
+                                    new()
+                                    {
+                                        Fill = Brushes.Aqua,
+                                        Stroke = Brushes.Black,
+                                        StrokeThickness = 0.5,
+                                        Width = CellSize,
+                                        Height = CellSize
+                                    });
+                                });*/
+                                break;
+                            }
+
+                        //bomb
+                        case 3:
+                            {
+
+                                break;
+                            }
+
+                        //buff
+                        case 4:
+                            {
+
+                                break;
+                            }
+
+                        //destroyable block
+                        case 5:
+                            {
+                                //rectIndex[i, j] = j;
+                                Dispatcher.Invoke(() =>
+                                {
+                                    assembledCanvas[i, j] =
+                                        new()
+                                        {
+                                            Fill = Brushes.SandyBrown,
+                                            Stroke = Brushes.Gray,
+                                            StrokeThickness = 0.05,
+                                            Width = CellSize,
+                                            Height = CellSize
+                                        };
+
+                                });
+                                break;
+                            }
+
+                        default:
+                            break;
                     }
 
                 }
-                Dispatcher.Invoke(() =>
-                {
-                    if (!CompareCanvasChildren(ClonedCanvas, assembledCanvas))
-                    {
-                        CloneCanvasChildren(ClonedCanvas, assembledCanvas);
-                        CloneCanvasChildren(GameCanvas, assembledCanvas);
-                    }
-                });
+
             }
 
-            ProcessPlayer(ref p1OldCoordX, ref p1OldCoordY, canvasCleared, ref p1OldCanvasPlace, 1);
-            ProcessPlayer(ref p2OldCoordX, ref p2OldCoordY, canvasCleared, ref p2OldCanvasPlace, 2);
+            Dispatcher.Invoke(() =>
+            {
+                if (!CompareCanvasChildren(ClonedCanvas, assembledCanvas))
+                {
+                    CloneCanvasChildren(ClonedCanvas, assembledCanvas);
+
+                    CloneCanvasChildren(GameCanvas, assembledCanvas);
+                }
+                DrawPlayer(client.Player1Coorditantes[0] * 50, client.Player1Coorditantes[1] * 50, Brushes.Blue, player1OccupiedCells);
+                DrawPlayer(client.Player2Coorditantes[0] * 50, client.Player2Coorditantes[1] * 50, Brushes.Red, player2OccupiedCells);
+
+            });
+
 
             return Task.CompletedTask;
         }
@@ -380,12 +351,21 @@ namespace WpfApp1
             {
                 for (int x = 0; x < FieldWidth; x++)
                 {
+                    int index1 = y, index2 = x;
+                    if (y == 0)
+                    {
+                        index1++;
+                    }
+                    if (x == 0)
+                    {
+                        index2++;
+                    }
                     DrawCell(GameCanvas, x * CellSize, y * CellSize, Brushes.Gray, Brushes.Black);
                 }
             }
         }
 
-        private static void DrawCell(Canvas canvas, double x, double y, SolidColorBrush fillColor, SolidColorBrush strokeColor)
+        private void DrawCell(Canvas canvas, double x, double y, SolidColorBrush fillColor, SolidColorBrush strokeColor)
         {
             var cellRect = new Rectangle
             {
@@ -401,15 +381,20 @@ namespace WpfApp1
             canvas.Children.Add(cellRect);
         }
 
-        private static void DrawCell(Canvas canvas, double x, double y, Rectangle cellRect)
+        private void DrawCell(Canvas canvas, double x, double y, Rectangle cellRect)
         {
             Canvas.SetLeft(cellRect, x);
             Canvas.SetTop(cellRect, y);
             canvas.Children.Add(cellRect);
         }
 
+        private void CreatePlayers()
+        {
+            player1 = DrawPlayer(0, 0, Brushes.Blue, player1OccupiedCells);
+            player2 = DrawPlayer((FieldWidth - 1) * CellSize, (FieldHeight - 1) * CellSize, Brushes.Red, player2OccupiedCells);
+        }
 
-        private Rectangle DrawPlayer(double x, double y, SolidColorBrush color)
+        private Rectangle DrawPlayer(double x, double y, SolidColorBrush color, HashSet<Point> occupiedCells)
         {
             var playerRect = new Rectangle
             {
@@ -422,6 +407,8 @@ namespace WpfApp1
             Canvas.SetTop(playerRect, y);
 
             GameCanvas.Children.Add(playerRect);
+
+            OccupyCell(occupiedCells, GetCellCoordinates(x, y));
 
             return playerRect;
         }
@@ -443,6 +430,34 @@ namespace WpfApp1
         private async Task SendMoveCommand(KeyEventArgs key)
         {
             await client.SendCommand(key.Key);
+        }
+
+        private void MovePlayer(Rectangle player, double newX, double newY, HashSet<Point> occupiedCells)
+        {
+            this.Dispatcher.Invoke(() =>
+            {
+                Canvas.SetLeft(player, newX);
+                Canvas.SetTop(player, newY);
+
+                OccupyCell(occupiedCells, GetCellCoordinates(newX, newY));
+            });
+
+        }
+
+        private bool IsCellInsideField(Point cell)
+        {
+            return cell.X >= 0 && cell.X < FieldWidth && cell.Y >= 0 && cell.Y < FieldHeight;
+        }
+
+        private bool IsCellOccupied(Point cell, HashSet<Point> occupiedCells)
+        {
+            return occupiedCells.Contains(cell);
+        }
+
+        private void OccupyCell(HashSet<Point> occupiedCells, Point cell)
+        {
+            occupiedCells.Clear();
+            occupiedCells.Add(cell);
         }
     }
 }
