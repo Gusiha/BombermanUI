@@ -289,7 +289,18 @@ namespace WpfApp1
                         //bomb
                         case 3:
                             {
-
+                                Dispatcher.Invoke(() =>
+                                {
+                                    assembledCanvas[i, j] =
+                                    new()
+                                    {
+                                        Fill = Brushes.Turquoise,
+                                        Stroke = Brushes.Yellow,
+                                        StrokeThickness = 0.5,
+                                        Width = CellSize,
+                                        Height = CellSize
+                                    };
+                                });
                                 break;
                             }
 

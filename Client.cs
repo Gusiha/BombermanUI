@@ -99,6 +99,11 @@ namespace ClientBomberman
                         await SendToAsync(Encoding.UTF8.GetBytes($"right {PlayerId}"));
                         break;
                     }
+                case Key.Space:
+                    {
+                        await SendToAsync(Encoding.UTF8.GetBytes($"place {PlayerId}"));
+                        break;
+                    }
 
 
                 default:
