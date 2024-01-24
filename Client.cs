@@ -31,7 +31,7 @@ namespace ClientBomberman
         public int[,] GameState { get; set; }
 
 
-        public Client(IPAddress serverIPAddress, int port)
+        public Client(IPAddress serverIPAddress, int serverPort, int clientPort)
         {
             
             string clientIp = "";
@@ -60,14 +60,14 @@ namespace ClientBomberman
                 throw new Exception("No network adapters with an IPv4 address in the system!");
 
             ClientIPAddress = IPAddress.Parse(clientIp);
-            Port = port;
+            Port = serverPort;
             _endPoint = new IPEndPoint(serverIPAddress, Port);
 
             GameState = new int[MapWidth, MapHeight];
             Player1Coorditantes = new int[2];
             Player2Coorditantes = new int[2];
 
-            IPEndPoint clientEndPoint = new IPEndPoint(ClientIPAddress, 65534);
+            IPEndPoint clientEndPoint = new IPEndPoint(ClientIPAddress, clientPort);
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             _socket.Bind(clientEndPoint);
         }

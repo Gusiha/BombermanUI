@@ -30,14 +30,14 @@ namespace WpfApp1
         private string ServerAddress;
         private int Port;
 
-        public Game(string address, string port)
+        public Game(string address, string clientPort)
         {
             Loaded += Loaded_Page;
             ServerAddress = address;
-            Port = int.Parse(port);
+            Port = int.Parse(clientPort);
 
             //"192.168.0.102"
-            client = new(IPAddress.Parse(ServerAddress), Port);
+            client = new(IPAddress.Parse(ServerAddress), 65535, Port);
 
             //TODO: Add try catch in a correct way, so that wrong IP address is handleled correctly.
             client.StartMessageLoop();
