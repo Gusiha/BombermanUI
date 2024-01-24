@@ -43,11 +43,11 @@ namespace WpfApp1
 
             //"192.168.0.102"
             client = new(IPAddress.Parse(ServerAddress), 65535, Port);
+            client.LastPingTime = DateTime.Now;
 
             //TODO: Add try catch in a correct way, so that wrong IP address is handleled correctly.
             client.StartMessageLoop();
             client.SendTo(Encoding.UTF8.GetBytes("connect"));
-
 
             InitializeComponent();
             CreateGrid();
@@ -220,6 +220,7 @@ namespace WpfApp1
 
         public Task Update()
         {
+
             MovePlayer(player1Image, client.Player1Coorditantes[0] * 50, client.Player1Coorditantes[1] * 50, player1OccupiedCells);
             MovePlayer(player2Image, client.Player2Coorditantes[0] * 50, client.Player2Coorditantes[1] * 50, player2OccupiedCells);
 
@@ -436,12 +437,13 @@ namespace WpfApp1
         private Image DrawPlayer(double x, double y, int number, HashSet<Point> occupiedCells)
         {
             string BodyName = "Body" + number;
+            string fuck = System.IO.Path.GetPathRoot(Directory.GetCurrentDirectory());
             Image BodyImage = new Image
             {
                 Width = 50,
                 Height = 50,
                 Name = BodyName,
-                Source = new BitmapImage(new Uri(System.IO.Path.Combine(Directory.GetCurrentDirectory(), "Assets", $"Body{number}.png"))),
+                Source = new BitmapImage(new Uri(System.IO.Path.Combine(Directory.GetCurrentDirectory(), "Assets", $"Body{number}.png")))
             };
 
             Canvas.SetLeft(BodyImage, x);

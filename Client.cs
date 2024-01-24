@@ -17,7 +17,7 @@ namespace ClientBomberman
         private IPEndPoint _endPoint;
         private byte[] _buffer;
         private ArraySegment<byte> _bufferSegment { get; set; }
-
+        public DateTime LastPingTime { get; set; }
         public IPAddress ClientIPAddress { get; private set; }
         public int Port { get; private set; }
 
@@ -30,10 +30,9 @@ namespace ClientBomberman
         public int[] Player2Coorditantes { get; set; }
         public int[,] GameState { get; set; }
 
-
         public Client(IPAddress serverIPAddress, int serverPort, int clientPort)
         {
-            
+
             string clientIp = "";
             _buffer = new byte[2048];
             _bufferSegment = new(_buffer);
@@ -120,6 +119,11 @@ namespace ClientBomberman
                 SocketReceiveFromResult result;
                 while (true)
                 {
+                    if (DateTime.Now - LastPingTime >= TimeSpan.FromSeconds(2))
+                    {
+                        await SendToAsync(Encoding.UTF8.GetBytes($"ping {PlayerId}"));
+                        LastPingTime = DateTime.Now;
+                    }
 
                     result = await _socket.ReceiveFromAsync(_bufferSegment, SocketFlags.None, _endPoint);
                     var message = Encoding.UTF8.GetString(_buffer, 0, result.ReceivedBytes);
@@ -140,15 +144,10 @@ namespace ClientBomberman
                             {
                                 Player1Coorditantes[0] = int.Parse(response[response.Length - 4]);
                                 Player1Coorditantes[1] = int.Parse(response[response.Length - 3]);
-                                Debug.Indent();
-                                Debug.WriteLine($"Player1 : [{Player1Coorditantes[0]}] [{Player1Coorditantes[1]}]");
-                                Debug.Unindent();
 
                                 Player2Coorditantes[0] = int.Parse(response[response.Length - 2]);
                                 Player2Coorditantes[1] = int.Parse(response[response.Length - 1]);
-                                Debug.Indent();
-                                Debug.WriteLine($"Player2 : [{Player2Coorditantes[0]}] [{Player2Coorditantes[1]}]");
-                                Debug.Unindent();
+
                                 //Taking gamestate data from response
 
                                 int responseSymbolNumber = 0;
@@ -162,17 +161,13 @@ namespace ClientBomberman
                                         GameState[i, j] = Int32.Parse(response[responseSymbolNumber]);
                                     }
                                 }
-
-
                                 continue;
 
                             }
-
-
                         default:
                             continue;
-
                     }
+
                 }
 
             });
