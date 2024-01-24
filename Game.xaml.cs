@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -10,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 
@@ -29,6 +31,9 @@ namespace WpfApp1
         private Canvas ClonedCanvas;
         private string ServerAddress;
         private int Port;
+        private Image player1Image;
+        private Image player2Image;
+
 
         public Game(string address, string clientPort)
         {
@@ -215,8 +220,8 @@ namespace WpfApp1
 
         public Task Update()
         {
-            MovePlayer(player1, client.Player1Coorditantes[0] * 50, client.Player1Coorditantes[1] * 50, player1OccupiedCells);
-            MovePlayer(player2, client.Player2Coorditantes[0] * 50, client.Player2Coorditantes[1] * 50, player2OccupiedCells);
+            MovePlayer(player1Image, client.Player1Coorditantes[0] * 50, client.Player1Coorditantes[1] * 50, player1OccupiedCells);
+            MovePlayer(player2Image, client.Player2Coorditantes[0] * 50, client.Player2Coorditantes[1] * 50, player2OccupiedCells);
 
             /*client.GameState[client.Player1Coorditantes[0], client.Player1Coorditantes[1]] = 2;
             client.GameState[client.Player2Coorditantes[0], client.Player2Coorditantes[1]] = 2;*/
@@ -347,8 +352,9 @@ namespace WpfApp1
 
                     CloneCanvasChildren(GameCanvas, assembledCanvas);
                 }
-                DrawPlayer(client.Player1Coorditantes[0] * 50, client.Player1Coorditantes[1] * 50, Brushes.Blue, player1OccupiedCells);
-                DrawPlayer(client.Player2Coorditantes[0] * 50, client.Player2Coorditantes[1] * 50, Brushes.Red, player2OccupiedCells);
+
+                DrawPlayer(client.Player1Coorditantes[0] * 50, client.Player1Coorditantes[1] * 50, 1, player1OccupiedCells);
+                DrawPlayer(client.Player2Coorditantes[0] * 50, client.Player2Coorditantes[1] * 50, 2, player2OccupiedCells);
 
             });
 
@@ -401,8 +407,11 @@ namespace WpfApp1
 
         private void CreatePlayers()
         {
-            player1 = DrawPlayer(0, 0, Brushes.Blue, player1OccupiedCells);
-            player2 = DrawPlayer((FieldWidth - 1) * CellSize, (FieldHeight - 1) * CellSize, Brushes.Red, player2OccupiedCells);
+            player1Image = DrawPlayer(0, 0, 1, player1OccupiedCells);
+            player2Image = DrawPlayer((FieldWidth - 1) * CellSize, (FieldHeight - 1) * CellSize, 2, player2OccupiedCells);
+
+            //player1 = DrawPlayer(0, 0, Brushes.Blue, player1OccupiedCells);
+            //player2 = DrawPlayer((FieldWidth - 1) * CellSize, (FieldHeight - 1) * CellSize, Brushes.Red, player2OccupiedCells);
         }
 
         private Rectangle DrawPlayer(double x, double y, SolidColorBrush color, HashSet<Point> occupiedCells)
@@ -424,6 +433,27 @@ namespace WpfApp1
             return playerRect;
         }
 
+        private Image DrawPlayer(double x, double y, int number, HashSet<Point> occupiedCells)
+        {
+            string BodyName = "Body" + number;
+            Image BodyImage = new Image
+            {
+                Width = 50,
+                Height = 50,
+                Name = BodyName,
+                Source = new BitmapImage(new Uri(System.IO.Path.Combine(Directory.GetCurrentDirectory(), "Assets", $"Body{number}.png"))),
+            };
+
+            Canvas.SetLeft(BodyImage, x);
+            Canvas.SetTop(BodyImage, y);
+
+            GameCanvas.Children.Add(BodyImage);
+
+            OccupyCell(occupiedCells, GetCellCoordinates(x, y));
+
+            return BodyImage;
+        }
+
         private Point GetCellCoordinates(double x, double y)
         {
             int cellX = (int)(x / CellSize);
@@ -443,7 +473,7 @@ namespace WpfApp1
             await client.SendCommand(key.Key);
         }
 
-        private void MovePlayer(Rectangle player, double newX, double newY, HashSet<Point> occupiedCells)
+        private void MovePlayer(Image player, double newX, double newY, HashSet<Point> occupiedCells)
         {
             this.Dispatcher.Invoke(() =>
             {
