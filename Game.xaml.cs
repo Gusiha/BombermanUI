@@ -26,8 +26,6 @@ namespace WpfApp1
         private const int CellSize = 50;
         private readonly HashSet<Point> player1OccupiedCells = new HashSet<Point>();
         private readonly HashSet<Point> player2OccupiedCells = new HashSet<Point>();
-        private Rectangle player1;
-        private Rectangle player2;
         private Canvas ClonedCanvas;
         private string ServerAddress;
         private int Port;
@@ -86,23 +84,22 @@ namespace WpfApp1
                 {
                     int n = j;
                     if (n == 0) n++;
-                    Rectangle rect = (Rectangle)toClone.Children[n * i];
-                    Rectangle clonedRect = new()
+                    Image img = (Image)toClone.Children[n * i];
+                    Image clonedBlock = new()
                     {
-                        Fill = rect.Fill.Clone(),
-                        Stroke = rect.Stroke.Clone(),
-                        StrokeThickness = rect.StrokeThickness,
-                        Width = rect.Width,
-                        Height = rect.Height
+                        Width = img.Width,
+                        Height = img.Height,
+                        Name = img.Name,
+                        Source = img.Source
                     };
-                    DrawCell(newCanvas, i * 50, j * 50, clonedRect);
+                    DrawCell(newCanvas, i * 50, j * 50, clonedBlock.Name);
                 }
             }
 
             return newCanvas;
         }
 
-        private void CloneCanvasChildren(Canvas newCanvas, Rectangle[,] toClone)
+        private void CloneCanvasChildren(Canvas newCanvas, Image[,] toClone)
         {
             if (toClone == null || toClone.GetLength(0) == 0)
             {
@@ -115,16 +112,15 @@ namespace WpfApp1
             {
                 for (int j = 0; j < toClone.GetLength(1); j++)
                 {
-                    Rectangle clonedRect = new()
+                    Image clonedBlock = new()
                     {
-                        Fill = toClone[i, j].Fill.Clone(),
-                        Stroke = toClone[i, j].Stroke.Clone(),
-                        StrokeThickness = toClone[i, j].StrokeThickness,
                         Width = toClone[i, j].Width,
-                        Height = toClone[i, j].Height
+                        Height = toClone[i, j].Height,
+                        Name = toClone[i, j].Name,
+                        Source = toClone[i, j].Source
                     };
 
-                    DrawCell(newCanvas, i * 50, j * 50, clonedRect);
+                    DrawCell(newCanvas, i * 50, j * 50, clonedBlock.Name);
                 }
             }
         }
@@ -142,10 +138,10 @@ namespace WpfApp1
 
             for (int i = 0; i < one.Children.Count; i++)
             {
-                Rectangle oneRect = (Rectangle)one.Children[i];
-                Rectangle twoRect = (Rectangle)two.Children[i];
+                Image oneBlock = (Image)one.Children[i];
+                Image twoBlock = (Image)two.Children[i];
 
-                if (oneRect.Fill.ToString() != twoRect.Fill.ToString())
+                if (oneBlock.Name != twoBlock.Name)
                 {
                     return false;
                 }
@@ -154,7 +150,7 @@ namespace WpfApp1
             return true;
         }
 
-        private static bool CompareCanvasChildren(Canvas one, Rectangle[,] two)
+        private static bool CompareCanvasChildren(Canvas one, Image[,] two)
         {
             if (one == null || two == null) return false;
             if (one.Children.Count != two.GetLength(0) * two.GetLength(1)) return false;
@@ -165,12 +161,12 @@ namespace WpfApp1
                 {
                     int n = i;
                     int g = j;
-                    Rectangle oneRect = (Rectangle)one.Children[n * g];
+                    Image oneBlock = (Image)one.Children[n * g];
 
                     if (n == 0 && g != 0) n++;
                     if (g == 0 && n != 0) g++;
 
-                    if (two[i, j].Fill.ToString() != oneRect.Fill.ToString())
+                    if (two[i, j].Name != oneBlock.Name)
                     {
                         return false;
                     }
@@ -227,14 +223,14 @@ namespace WpfApp1
             /*client.GameState[client.Player1Coorditantes[0], client.Player1Coorditantes[1]] = 2;
             client.GameState[client.Player2Coorditantes[0], client.Player2Coorditantes[1]] = 2;*/
 
-            Rectangle[,] assembledCanvas = new Rectangle[FieldWidth, FieldHeight];
+            Image[,] assembledCanvas = new Image[FieldWidth, FieldHeight];
             for (int i = 0; i < FieldWidth; i++)
             {
                 for (int j = 0; j < FieldHeight; j++)
                 {
                     switch (client.GameState[i, j])
                     {
-                        //emptiness
+                        //emptiness(grass)
                         case 0:
                             {
                                 //rectIndex[i, j] = j;
@@ -243,9 +239,8 @@ namespace WpfApp1
                                     assembledCanvas[i, j] =
                                         new()
                                         {
-                                            Fill = Brushes.Beige,
-                                            Stroke = Brushes.Gray,
-                                            StrokeThickness = 0.05,
+                                            Name = "Grass",
+                                            Source = new BitmapImage(new Uri(System.IO.Path.Combine(Directory.GetCurrentDirectory(), "Assets", $"Grass.png"))),
                                             Width = CellSize,
                                             Height = CellSize
                                         };
@@ -264,9 +259,8 @@ namespace WpfApp1
                                     assembledCanvas[i, j] =
                                     new()
                                     {
-                                        Fill = Brushes.Gray,
-                                        Stroke = Brushes.Black,
-                                        StrokeThickness = 0.5,
+                                        Name = "unbreakableBlock",
+                                        Source = new BitmapImage(new Uri(System.IO.Path.Combine(Directory.GetCurrentDirectory(), "Assets", $"unbreakableBlock.png"))),
                                         Width = CellSize,
                                         Height = CellSize
                                     };
@@ -300,9 +294,8 @@ namespace WpfApp1
                                     assembledCanvas[i, j] =
                                     new()
                                     {
-                                        Fill = Brushes.Turquoise,
-                                        Stroke = Brushes.Yellow,
-                                        StrokeThickness = 0.5,
+                                        Name = "bomb",
+                                        Source = new BitmapImage(new Uri(System.IO.Path.Combine(Directory.GetCurrentDirectory(), "Assets", $"bomb.png"))),
                                         Width = CellSize,
                                         Height = CellSize
                                     };
@@ -326,9 +319,8 @@ namespace WpfApp1
                                     assembledCanvas[i, j] =
                                         new()
                                         {
-                                            Fill = Brushes.SandyBrown,
-                                            Stroke = Brushes.Gray,
-                                            StrokeThickness = 0.05,
+                                            Name = "breakableBlock",
+                                            Source = new BitmapImage(new Uri(System.IO.Path.Combine(Directory.GetCurrentDirectory(), "Assets", $"breakableBlock.png"))),
                                             Width = CellSize,
                                             Height = CellSize
                                         };
@@ -378,9 +370,26 @@ namespace WpfApp1
                     {
                         index2++;
                     }
-                    DrawCell(GameCanvas, x * CellSize, y * CellSize, Brushes.Gray, Brushes.Black);
+                    DrawCell(GameCanvas, x * CellSize, y * CellSize, "grass");
                 }
             }
+        }
+
+
+        private void DrawCell(Canvas canvas, double x, double y, string blockName)
+        {
+            string bodyName = blockName;
+            Image block = new Image
+            {
+                Width = 50,
+                Height = 50,
+                Name = bodyName,
+                Source = new BitmapImage(new Uri(System.IO.Path.Combine(Directory.GetCurrentDirectory(), "Assets", $"{bodyName}.png")))
+            };
+
+            Canvas.SetLeft(block, x);
+            Canvas.SetTop(block, y);
+            canvas.Children.Add(block);
         }
 
         private void DrawCell(Canvas canvas, double x, double y, SolidColorBrush fillColor, SolidColorBrush strokeColor)
@@ -437,7 +446,6 @@ namespace WpfApp1
         private Image DrawPlayer(double x, double y, int number, HashSet<Point> occupiedCells)
         {
             string BodyName = "Body" + number;
-            string fuck = System.IO.Path.GetPathRoot(Directory.GetCurrentDirectory());
             Image BodyImage = new Image
             {
                 Width = 50,
