@@ -116,7 +116,7 @@ namespace ClientBomberman
             _ = Task.Run(async () =>
             {
                 SocketReceiveFromResult result;
-                while (true)
+                while (Status == "Ongoing")
                 {
                     if (DateTime.Now - LastPingTime >= TimeSpan.FromSeconds(2))
                     {
@@ -180,7 +180,8 @@ namespace ClientBomberman
                     }
 
                 }
-
+                _socket.Close();
+                _socket.Shutdown(SocketShutdown.Both);
             });
         }
 
