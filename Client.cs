@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -20,7 +19,7 @@ namespace ClientBomberman
         public DateTime LastPingTime { get; set; }
         public IPAddress ClientIPAddress { get; private set; }
         public int Port { get; private set; }
-
+        public string Status { get; private set; }
 
 
         public int MapWidth { get; set; } = 13;
@@ -32,7 +31,7 @@ namespace ClientBomberman
 
         public Client(IPAddress serverIPAddress, int serverPort, int clientPort)
         {
-
+            Status = "Ongoing";
             string clientIp = "";
             _buffer = new byte[2048];
             _bufferSegment = new(_buffer);
@@ -163,6 +162,18 @@ namespace ClientBomberman
                                 }
                                 continue;
 
+                            }
+                        case "204":
+                            {
+                                if (response[1] == "1")
+                                {
+                                    Status = "Victory";
+                                }
+                                else
+                                {
+                                    Status = "Defeat";
+                                }
+                                return;
                             }
                         default:
                             continue;
