@@ -1,4 +1,5 @@
-﻿using ClientBomberman;
+﻿using BomberGameUI;
+using ClientBomberman;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,7 +20,7 @@ namespace WpfApp1
 {
     public partial class Game : Page
     {
-        public Client client { get; set; }
+        public Client ThisClient { get; set; }
 
         private const int FieldWidth = 13;
         private const int FieldHeight = 11;
@@ -42,12 +43,12 @@ namespace WpfApp1
             Port = int.Parse(clientPort);
 
             //"192.168.0.102"
-            client = new(IPAddress.Parse(ServerAddress), 65535, Port);
-            client.LastPingTime = DateTime.Now;
+            ThisClient = new(IPAddress.Parse(ServerAddress), 65535, Port);
+            ThisClient.LastPingTime = DateTime.Now;
 
             //TODO: Add try catch in a correct way, so that wrong IP address is handleled correctly.
-            client.StartMessageLoop();
-            client.SendTo(Encoding.UTF8.GetBytes("connect"));
+            ThisClient.StartMessageLoop();
+            ThisClient.SendTo(Encoding.UTF8.GetBytes("connect"));
 
             InitializeComponent();
             CreateGrid();
@@ -191,7 +192,7 @@ namespace WpfApp1
 
             Task.Run(() =>
             {
-                while (true)
+                while (ThisClient.Status == "Ongoing")
                 {
                     Task task = new(() =>
                     {
@@ -212,17 +213,24 @@ namespace WpfApp1
                     }
 
                 }
+                Debug.Indent();
+                Debug.WriteLine("End");
+                Debug.Unindent();
+                Dispatcher.Invoke(() =>
+                {
+                    string status = ThisClient.Status;
+                    GameEnd end = new(status);
+                    this.NavigationService.Navigate(end);
+                });
             });
-
-
+            Task.WaitAll();
         }
 
 
         public Task Update()
         {
-
-            MovePlayer(player1Image, client.Player1Coorditantes[0] * 50, client.Player1Coorditantes[1] * 50, player1OccupiedCells);
-            MovePlayer(player2Image, client.Player2Coorditantes[0] * 50, client.Player2Coorditantes[1] * 50, player2OccupiedCells);
+            MovePlayer(player1Image, ThisClient.Player1Coorditantes[0] * 50, ThisClient.Player1Coorditantes[1] * 50, player1OccupiedCells);
+            MovePlayer(player2Image, ThisClient.Player2Coorditantes[0] * 50, ThisClient.Player2Coorditantes[1] * 50, player2OccupiedCells);
 
             /*client.GameState[client.Player1Coorditantes[0], client.Player1Coorditantes[1]] = 2;
             client.GameState[client.Player2Coorditantes[0], client.Player2Coorditantes[1]] = 2;*/
@@ -232,7 +240,7 @@ namespace WpfApp1
             {
                 for (int j = 0; j < FieldHeight; j++)
                 {
-                    switch (client.GameState[i, j])
+                    switch (ThisClient.GameState[i, j])
                     {
                         //emptiness
                         case 0:
@@ -354,8 +362,8 @@ namespace WpfApp1
                     CloneCanvasChildren(GameCanvas, assembledCanvas);
                 }
 
-                DrawPlayer(client.Player1Coorditantes[0] * 50, client.Player1Coorditantes[1] * 50, 1, player1OccupiedCells);
-                DrawPlayer(client.Player2Coorditantes[0] * 50, client.Player2Coorditantes[1] * 50, 2, player2OccupiedCells);
+                DrawPlayer(ThisClient.Player1Coorditantes[0] * 50, ThisClient.Player1Coorditantes[1] * 50, 1, player1OccupiedCells);
+                DrawPlayer(ThisClient.Player2Coorditantes[0] * 50, ThisClient.Player2Coorditantes[1] * 50, 2, player2OccupiedCells);
 
             });
 
@@ -472,7 +480,7 @@ namespace WpfApp1
 
         private async Task SendMoveCommand(KeyEventArgs key)
         {
-            await client.SendCommand(key.Key);
+            await ThisClient.SendCommand(key.Key);
         }
 
         private void MovePlayer(Image player, double newX, double newY, HashSet<Point> occupiedCells)
