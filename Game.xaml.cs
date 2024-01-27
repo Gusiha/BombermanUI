@@ -192,12 +192,8 @@ namespace WpfApp1
 
             Task.Run(() =>
             {
-                while (true)
+                while (ThisClient.Status == "Ongoing")
                 {
-                    if (ThisClient.Status == "Defeat" || ThisClient.Status == "Victory")
-                    {
-                        break;
-                    }
                     Task task = new(() =>
                     {
                         Update();
@@ -217,9 +213,17 @@ namespace WpfApp1
                     }
 
                 }
+                Debug.Indent();
+                Debug.WriteLine("End");
+                Debug.Unindent();
+                Dispatcher.Invoke(() =>
+                {
+                    string status = ThisClient.Status;
+                    GameEnd end = new(status);
+                    this.NavigationService.Navigate(end);
+                });
             });
-            GameEnd end = new(ThisClient.Status);
-            this.NavigationService.Navigate(end);
+            Task.WaitAll();
         }
 
 

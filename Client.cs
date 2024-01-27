@@ -173,7 +173,7 @@ namespace ClientBomberman
                                 {
                                     Status = "Defeat";
                                 }
-                                return;
+                                continue;
                             }
                         default:
                             continue;
